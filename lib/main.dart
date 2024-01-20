@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:weather_app/weather/data/weather.dart';
+import 'package:weather_app/weather/service/AirQualityService.dart';
 import 'package:weather_app/weather/service/weather_service.dart';
+
+import 'weather/data/airQuality.dart';
 
 void main() {
   runApp(const MainApp());
@@ -12,6 +15,11 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Weather App',
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
+        hintColor: Colors
+            .pinkAccent, // This is the color used as the primary swatch in Material 3.
+      ),
       initialRoute: '/',
       routes: {
         '/': (context) => InputPage(),
@@ -85,33 +93,83 @@ class ResultsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weatherService = WeatherService();
+    final airQualityService = AirQualityService();
 
     return Scaffold(
-      appBar: AppBar(title: Text('Weather Results')),
+      appBar: AppBar(
+        title: Text('Weather Results'),
+        backgroundColor: Colors.purple, // Custom AppBar color
+      ),
       body: FutureBuilder<Weather>(
         future: weatherService.getCurrentWeather(cityName),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (!snapshot.hasData) {
-            return Center(child: Text('No weather data available'));
+            return const Center(child: Text('No weather data available'));
           } else {
+            // When we have weather data, proceed to build the UI for air quality.
             final weather = snapshot.data!;
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                      'Location: ${weather.location.name}, ${weather.location.region}, ${weather.location.country}',
-                      style: TextStyle(fontSize: 20)),
-                  Text('Temperature: ${weather.current.tempC}°C',
-                      style: TextStyle(fontSize: 20)),
-                  // Add more details as needed
-                ],
-              ),
+            return FutureBuilder<AirQuality>(
+              future: airQualityService.getCurrentAirQuality(cityName),
+              builder: (context, airQualitySnapshot) {
+                if (airQualitySnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (airQualitySnapshot.hasError) {
+                  return Center(
+                      child: Text('Error: ${airQualitySnapshot.error}'));
+                } else if (!airQualitySnapshot.hasData) {
+                  return const Center(
+                      child: Text('No air quality data available'));
+                } else {
+                  // When we have both weather and air quality data, build the UI for both.
+                  final airQuality = airQualitySnapshot.data!;
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.thermostat_outlined,
+                              color: Colors.pinkAccent,
+                              size: 24.0,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Temperature: ${weather.current.tempC}°C',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10), // Add some spacing
+                        Text(
+                          'Air Quality Index (US EPA): ${airQuality.usEpaIndex}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.purple,
+                          ),
+                        ),
+                        Text(
+                          'PM2.5: ${airQuality.pm25} µg/m³',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.purple,
+                          ),
+                        ),
+                        // ... additional details ...
+                      ],
+                    ),
+                  );
+                }
+              },
             );
           }
         },
