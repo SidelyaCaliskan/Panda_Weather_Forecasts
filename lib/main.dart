@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:weather_app/weather/data/weather.dart';
-import 'package:weather_app/weather/service/AirQualityService.dart';
 import 'package:weather_app/weather/service/weather_service.dart';
-
-import 'weather/data/airQuality.dart';
 
 void main() {
   runApp(const MainApp());
@@ -48,10 +46,39 @@ class InputPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter Location')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(controller: _controller),
+      appBar: AppBar(title: const Text('Panda Weather')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  hintText: 'Enter City Name', // Placeholder text
+                  border: OutlineInputBorder(
+                    // Normal border
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    // Border when TextField is enabled
+                    borderSide: BorderSide(color: Colors.purple, width: 2.0),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    // Border when TextField is focused
+                    borderSide:
+                        BorderSide(color: Colors.pinkAccent, width: 2.0),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  prefixIcon:
+                      Icon(Icons.cloud, color: Colors.purple), // Cloud icon
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -79,7 +106,12 @@ class InputPage extends StatelessWidget {
             );
           }
         },
-        child: const Icon(Icons.navigate_next),
+        child: SvgPicture.asset(
+          'assets/panda.svg',
+          // You can set the color if you want
+          width: 24.0, // Set a suitable size for the icon
+          height: 24.0,
+        ),
       ),
     );
   }
@@ -93,7 +125,6 @@ class ResultsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weatherService = WeatherService();
-    final airQualityService = AirQualityService();
 
     return Scaffold(
       appBar: AppBar(
@@ -110,66 +141,37 @@ class ResultsPage extends StatelessWidget {
           } else if (!snapshot.hasData) {
             return const Center(child: Text('No weather data available'));
           } else {
-            // When we have weather data, proceed to build the UI for air quality.
             final weather = snapshot.data!;
-            return FutureBuilder<AirQuality>(
-              future: airQualityService.getCurrentAirQuality(cityName),
-              builder: (context, airQualitySnapshot) {
-                if (airQualitySnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (airQualitySnapshot.hasError) {
-                  return Center(
-                      child: Text('Error: ${airQualitySnapshot.error}'));
-                } else if (!airQualitySnapshot.hasData) {
-                  return const Center(
-                      child: Text('No air quality data available'));
-                } else {
-                  // When we have both weather and air quality data, build the UI for both.
-                  final airQuality = airQualitySnapshot.data!;
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.thermostat_outlined,
-                              color: Colors.pinkAccent,
-                              size: 24.0,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Temperature: ${weather.current.tempC}°C',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Colors.purple,
-                              ),
-                            ),
-                          ],
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: [
+                        // Display temperature icon
+                        Icon(
+                          Icons.thermostat_outlined,
+                          color: Colors.pinkAccent, // Icon color
+                          size: 24.0,
                         ),
-                        SizedBox(height: 10), // Add some spacing
+                        const SizedBox(
+                            width: 10), // Spacing between icon and text
+                        // Temperature text
                         Text(
-                          'Air Quality Index (US EPA): ${airQuality.usEpaIndex}',
+                          'Temperature: ${weather.current.tempC}°C',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.purple,
+                            fontSize: 20,
+                            color: Colors.purple, // Text color
                           ),
                         ),
-                        Text(
-                          'PM2.5: ${airQuality.pm25} µg/m³',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.purple,
-                          ),
-                        ),
-                        // ... additional details ...
                       ],
                     ),
-                  );
-                }
-              },
+                    // Additional details...
+                  ],
+                ),
+              ),
             );
           }
         },
